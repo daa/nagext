@@ -26,9 +26,15 @@ class NagExt(object):
 		self.close()
 
 	def open(self):
+		"""
+		Open Nagios command file
+		"""
 		self._cmd_f = open(self.command_file, 'w')
 	
 	def close(self):
+		"""
+		Close Nagios command file
+		"""
 		self._cmd_f.close()
 
 	def run(self, cmd, *args):
