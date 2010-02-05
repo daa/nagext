@@ -36,16 +36,44 @@ def unescape(text):
 		return text # leave as is
 	return re.sub("&#?\w+;", fixup, text)
 
-root_url = 'http://old.nagios.org/developerinfo/externalcommands/'
-
-f = urllib2.urlopen(root_url + 'commandlist.php')
-
-soup = BeautifulSoup(f.read())
-
-f.close()
-
-content_table = soup.find('table', { 'class' : 'Content' })
-hrefs = content_table.findAll('a')[4:]
+def wrap(txt, cols=80):
+	"""
+	wraps txt (line of text) at cols columns
+	"""
+	word = ''
+	col = 0
+	line = ''
+	char = ''
+	if txt[-1] == "\n":
+		txt2 = txt[0:-1]
+	else:
+		txt2 = txt
+	for char in txt2:
+		if not char.isspace():
+			word += char
+		else:
+			if word:
+				if col + len(word) <= cols or not line:
+					line += word
+					col += len(word)
+				else:
+					line = line.rstrip() + "\n" + word
+					col = len(word)
+				word = ""
+			if char != '\n':
+				line += char
+				col += 1
+			elif line[-1] != ' ':
+				line += ' '
+				col += 1
+	if word:
+		if col + len(word) < cols:
+			line += word
+		else:
+			line = line.rstrip() + "\n" + word
+	if txt[-1] == '\n':
+		line += "\n" 
+	return line
 
 def cmd2py(cmd, descr):
 	cmd = cmd.strip().replace('<', '').replace('>', '')
@@ -55,36 +83,48 @@ def cmd2py(cmd, descr):
 	args = ', '.join(c[1:])
 	method = "\tdef %s(self, %s):\n" % (name, args) + \
 		'\t\t"""\n' + \
-		'\t\t%s\n' % descr + \
+		'\t\t%s\n' % wrap(descr) + \
 		'\t\t"""\n' + \
 		"\t\tself.run('%s', %s)\n" % (c[0], args)
 	return method
 
-for a in hrefs:
-	#print a['href']
-	#print a.string
-	f = urllib2.urlopen(root_url + a['href'])
-	s = BeautifulSoup(f.read())
-	t = s.find('table', { 'class': 'Content' })
-	tds = t.findAll('td')
-	p = False
-	cmd = ''
-	descr = ''
-	set_cmd = set_descr = False
-	for td in tds:
-		if set_cmd:
-			cmd = unescape(td.string.decode())
-			set_cmd = False
-		elif set_descr:
-			descr = unescape(td.string.decode())
-			set_descr = False
-		if td.string == 'Command Format:':
-			set_cmd = True
-		elif td.string == 'Description:':
-			set_descr = True
-		if cmd and descr:
-			break
-	if cmd and descr:
-		print cmd2py(cmd, descr)
+if __name__ == '__main__':
+	root_url = 'http://old.nagios.org/developerinfo/externalcommands/'
+
+	f = urllib2.urlopen(root_url + 'commandlist.php')
+
+	soup = BeautifulSoup(f.read())
+
 	f.close()
+
+	content_table = soup.find('table', { 'class' : 'Content' })
+	hrefs = content_table.findAll('a')[4:]
+
+	for a in hrefs:
+		#print a['href']
+		#print a.string
+		f = urllib2.urlopen(root_url + a['href'])
+		s = BeautifulSoup(f.read())
+		t = s.find('table', { 'class': 'Content' })
+		tds = t.findAll('td')
+		p = False
+		cmd = ''
+		descr = ''
+		set_cmd = set_descr = False
+		for td in tds:
+			if set_cmd:
+				cmd = unescape(td.string.decode())
+				set_cmd = False
+			elif set_descr:
+				descr = unescape(td.string.decode())
+				set_descr = False
+			if td.string == 'Command Format:':
+				set_cmd = True
+			elif td.string == 'Description:':
+				set_descr = True
+			if cmd and descr:
+				break
+		if cmd and descr:
+			print cmd2py(cmd, descr)
+		f.close()
 
