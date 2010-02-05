@@ -36,7 +36,7 @@ def unescape(text):
 		return text # leave as is
 	return re.sub("&#?\w+;", fixup, text)
 
-def wrap(txt, cols=80):
+def wrap(txt, ind='', cols=80):
 	"""
 	wraps txt (line of text) at cols columns
 	"""
@@ -57,7 +57,8 @@ def wrap(txt, cols=80):
 					line += word
 					col += len(word)
 				else:
-					line = line.rstrip() + "\n" + word
+					line = line.rstrip() + "\n" + ind + word
+					#col = len(ind + word)
 					col = len(word)
 				word = ""
 			if char != '\n':
@@ -70,7 +71,7 @@ def wrap(txt, cols=80):
 		if col + len(word) < cols:
 			line += word
 		else:
-			line = line.rstrip() + "\n" + word
+			line = line.rstrip() + "\n" + ind + word
 	if txt[-1] == '\n':
 		line += "\n" 
 	return line
@@ -83,7 +84,7 @@ def cmd2py(cmd, descr):
 	args = ', '.join(c[1:])
 	method = "\tdef %s(self, %s):\n" % (name, args) + \
 		'\t\t"""\n' + \
-		'\t\t%s\n' % wrap(descr) + \
+		'\t\t%s\n' % wrap(descr, ind='\t\t') + \
 		'\t\t"""\n' + \
 		"\t\tself.run('%s', %s)\n" % (c[0], args)
 	return method

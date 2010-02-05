@@ -7,5 +7,6 @@ setup(name='python-nagext',
 	description='Python interface to Nagios external commands',
 	author='Alexander Duryagin',
 	author_email='daa@vologda.ru',
+	url='http://github.com/daa/nagext',
 	py_modules=['nagext'])
 
