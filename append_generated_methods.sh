@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cat nagext.tmpl > nagext.py
+cat nagext.tmpl.py > nagext.py
 
 ./nag_external_commands.py >> nagext.py
 
