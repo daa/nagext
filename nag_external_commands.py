@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from BeautifulSoup import BeautifulSoup
 import urllib2
@@ -6,7 +6,7 @@ import re, htmlentitydefs
 
 def unescape(text):
     """
-    Removes HTML or XML character references 
+    Removes HTML or XML character references
     and entities from a text string.
     keep &amp;, &gt;, &lt; in the source code.
     from Fredrik Lundh
@@ -73,7 +73,7 @@ def wrap(txt, ind='', cols=80):
         else:
             line = line.rstrip() + "\n" + ind + word
     if txt[-1] == '\n':
-        line += "\n" 
+        line += "\n"
     return line
 
 def cmd2py(cmd, descr):
@@ -128,4 +128,3 @@ if __name__ == '__main__':
         if cmd and descr:
             print cmd2py(cmd, descr)
         f.close()
-

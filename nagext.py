@@ -20,6 +20,9 @@
 This module provides python interface to Nagios external commands
 """
 
+import os
+import stat
+
 from time import time
 
 class ExecError(Exception):
@@ -40,16 +43,26 @@ class NagExt(object):
         self.command_file = command_file
         self._cmd_f = None
         self.open()
-    
+
     def __del__(self):
         self.close()
 
     def open(self):
+        """Open Nagios command file
+
+        Raises:
+          ExecError: if the file 'command_file' doesn't exist, can't be open
+          or is not a pipe (fifo)
         """
-        Open Nagios command file
-        """
-        self._cmd_f = open(self.command_file, 'w')
-    
+        try:
+            st = os.stat(self.command_file)
+            if not stat.S_ISFIFO(st.st_mode):
+                raise IOError('The command file "%s" is not a pipe' %
+                              self.command_file)
+            self._cmd_f = open(self.command_file, 'w')
+        except (OSError, IOError) as e:
+            raise ExecError(str(e))
+
     def close(self):
         """
         Close Nagios command file
@@ -57,71 +70,24 @@ class NagExt(object):
         self._cmd_f.close()
 
     def run(self, cmd, *args):
-    	"""
-        Run Nagios external command with given arguments, converting bool to int
         """
-        def bool2int(a):
+        Run Nagios external command with given arguments,
+        converting bool to int.
+        """
+        def normalize_args(a):
             if isinstance(a, bool):
-                return int(a)
-            else:
-                return a
+                a = int(a)
+            return str(a)
+
         try:
-            #str_args = ';'.join([ str(bool2int(a)) for a in args ])
-            str_args = ';'.join(map(str, map(bool2int, args)))
-            print >> self._cmd_f, "[%lu] %s;%s" % (time(), cmd, str_args)
-        except Exception, e:
+            str_args = ';'.join([normalize_args(a) for a in args])
+            self._cmd_f.write("[%lu] %s;%s\n" % (time(), cmd, str_args))
+            self._cmd_f.flush()
+        except Exception as e:
             raise ExecError(str(e))
 
     # next follow automatically generated methods from nagios developer documentation
     # for external commands
-
-    def acknowledge_host_problem(self, host_name, sticky, notify, persistent, author, comment):
-        """
-        Allows you to acknowledge the current problem for the specified host.  By
-        acknowledging the current problem, future notifications (for the same host
-        state) are disabled.  If the "sticky" option is set to one (1), the
-        acknowledgement will remain until the host returns to an UP state.  Otherwise
-        the acknowledgement will automatically be removed when the host changes state.
-        If the "notify" option is set to one (1), a notification will be sent out to
-        contacts indicating that the current host problem has been acknowledged.  If the
-        "persistent" option is set to one (1), the comment associated with the
-        acknowledgement will survive across restarts of the Nagios process.  If not, the
-        comment will be deleted the next time Nagios restarts.
-        """
-        self.run('ACKNOWLEDGE_HOST_PROBLEM', host_name, sticky, notify, persistent, author, comment)
-
-    def acknowledge_svc_problem(self, host_name, service_description, sticky, notify, persistent, author, comment):
-        """
-        Allows you to acknowledge the current problem for the specified service.  By
-        acknowledging the current problem, future notifications (for the same
-        servicestate) are disabled.  If the "sticky" option is set to one (1), the
-        acknowledgement will remain until the service returns to an OK state.  Otherwise
-        the acknowledgement will automatically be removed when the service changes
-        state.  If the "notify" option is set to one (1), a notification will be sent
-        out to contacts indicating that the current service problem has been
-        acknowledged.  If the "persistent" option is set to one (1), the comment
-        associated with the acknowledgement will survive across restarts of the Nagios
-        process.  If not, the comment will be deleted the next time Nagios restarts.
-        """
-        self.run('ACKNOWLEDGE_SVC_PROBLEM', host_name, service_description, sticky, notify, persistent, author, comment)
-
-    def add_host_comment(self, host_name, persistent, author, comment):
-        """
-        Adds a comment to a particular host.  If the "persistent" field is set to zero
-        (0), the comment will be deleted the next time Nagios is restarted.  Otherwise,
-        the comment will persist across program restarts until it is deleted manually.
-        """
-        self.run('ADD_HOST_COMMENT', host_name, persistent, author, comment)
-
-    def add_svc_comment(self, host_name, service_description, persistent, author, comment):
-        """
-        Adds a comment to a particular service.  If the "persistent" field is set to
-        zero (0), the comment will be deleted the next time Nagios is restarted.
-        Otherwise, the comment will persist across program restarts until it is deleted
-        manually.
-        """
-        self.run('ADD_SVC_COMMENT', host_name, service_description, persistent, author, comment)
-
     def change_contact_host_notification_timeperiod(self, contact_name, notification_timeperiod):
         """
         Changes the host notification timeperiod for a particular contact to what is
